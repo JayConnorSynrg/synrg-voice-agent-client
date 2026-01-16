@@ -363,7 +363,7 @@ export function useLiveKitAgent(options: UseLiveKitAgentOptions = {}) {
         try {
           audioDiag.log('Capturing meeting audio...')
 
-          const { LocalAudioTrack } = await import('livekit-client')
+          const { LocalAudioTrack, Track } = await import('livekit-client')
 
           // Simple getUserMedia - let browser handle settings
           const meetingStream = await navigator.mediaDevices.getUserMedia({
@@ -376,23 +376,91 @@ export function useLiveKitAgent(options: UseLiveKitAgentOptions = {}) {
             throw new Error('No audio track from getUserMedia')
           }
 
+          // CRITICAL: Verify track is actually live and has data
+          const trackSettings = audioTrack.getSettings()
           audioDiag.log('Meeting audio captured', {
             trackId: audioTrack.id,
             label: audioTrack.label,
-            settings: audioTrack.getSettings()
+            readyState: audioTrack.readyState,
+            enabled: audioTrack.enabled,
+            muted: audioTrack.muted,
+            settings: trackSettings
           })
+
+          // AUDIO VERIFICATION: Check if we're getting actual audio data
+          const verifyAudioStream = async (): Promise<boolean> => {
+            return new Promise((resolve) => {
+              const verifyContext = new AudioContext()
+              const source = verifyContext.createMediaStreamSource(meetingStream)
+              const analyser = verifyContext.createAnalyser()
+              analyser.fftSize = 256
+              source.connect(analyser)
+
+              const dataArray = new Uint8Array(analyser.frequencyBinCount)
+              let checkCount = 0
+              const maxChecks = 10 // Check for 1 second
+
+              const checkAudio = () => {
+                analyser.getByteFrequencyData(dataArray)
+                const avg = dataArray.reduce((a, b) => a + b) / dataArray.length
+
+                if (avg > 0.1) {
+                  audioDiag.log('✅ AUDIO VERIFICATION: Stream has audio data', { avgLevel: avg })
+                  verifyContext.close()
+                  resolve(true)
+                  return
+                }
+
+                checkCount++
+                if (checkCount < maxChecks) {
+                  setTimeout(checkAudio, 100)
+                } else {
+                  audioDiag.log('⚠️ AUDIO VERIFICATION: No audio data detected after 1s (may be silent or Recall.ai not ready)')
+                  verifyContext.close()
+                  resolve(false)
+                }
+              }
+
+              setTimeout(checkAudio, 100)
+            })
+          }
+
+          // Run verification in background (don't block publishing)
+          verifyAudioStream()
 
           // Create and publish LiveKit track
           // CRITICAL: userProvidedTrack must be TRUE to use our captured track
           const localAudioTrack = new LocalAudioTrack(audioTrack, undefined, true)
-          await room.localParticipant.publishTrack(localAudioTrack, {
+
+          // Publish with explicit source type
+          const publication = await room.localParticipant.publishTrack(localAudioTrack, {
             name: 'meeting-audio',
-            source: 'microphone'
+            source: Track.Source.Microphone  // Use enum for type safety
           })
 
-          audioDiag.log('Meeting audio published to LiveKit', {
-            trackSid: localAudioTrack.sid
+          // CRITICAL: Verify track was actually published
+          if (!publication || !publication.trackSid) {
+            audioDiag.error('Track publication failed - no SID returned', { publication })
+            throw new Error('Track publication failed - no SID returned')
+          }
+
+          audioDiag.log('✅ Meeting audio published to LiveKit', {
+            trackSid: publication.trackSid,
+            trackName: publication.trackName,
+            source: publication.source,
+            isMuted: publication.isMuted
           })
+
+          // Send confirmation to agent via data channel
+          const encoder = new TextEncoder()
+          room.localParticipant.publishData(
+            encoder.encode(JSON.stringify({
+              type: 'audio.published',
+              trackSid: publication.trackSid,
+              trackName: 'meeting-audio'
+            })),
+            { reliable: true }
+          )
 
           // Monitor input levels
           const inputAnalyser = sharedAudioContext.createAnalyser()
@@ -402,6 +470,10 @@ export function useLiveKitAgent(options: UseLiveKitAgentOptions = {}) {
 
           const inputDataArray = new Uint8Array(inputAnalyser.frequencyBinCount)
           let inputActiveFrames = 0
+
+          // Track when monitoring started for timeout detection
+          const monitorStartTime = Date.now()
+          let hasLoggedNoAudioWarning = false
 
           const monitorInput = () => {
             if (audioTrack.readyState !== 'live') {
@@ -418,6 +490,13 @@ export function useLiveKitAgent(options: UseLiveKitAgentOptions = {}) {
               inputActiveFrames++
               if (inputActiveFrames === 1) {
                 audioDiag.log('INPUT: First audio detected', { level: normalized.toFixed(3) })
+              }
+            } else {
+              // Check for no audio after 5 seconds - warn but don't fail
+              const elapsed = Date.now() - monitorStartTime
+              if (elapsed > 5000 && inputActiveFrames === 0 && !hasLoggedNoAudioWarning) {
+                hasLoggedNoAudioWarning = true
+                audioDiag.log('WARNING: No input audio detected after 5s - check Recall.ai status')
               }
             }
 
