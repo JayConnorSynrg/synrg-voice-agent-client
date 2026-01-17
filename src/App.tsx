@@ -153,81 +153,79 @@ function App() {
   const orbOutputVolume = displayAgentState === 'speaking' ? displayOutputVolume : 0
 
   // FULLY CONNECTED: Show complete UI - user sees "Ready" immediately
+  // Layout: Orb → State Label → Transcript (center) → Waveform → Logo
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center overflow-hidden">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center overflow-hidden py-6">
 
-      {/* Main content container */}
-      <div className="relative z-10 w-full max-w-2xl px-6 py-8 flex flex-col items-center">
+      {/* Mode badge - top left */}
+      <div className="absolute top-3 left-3">
+        <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded-full ${mockMode ? 'bg-amber-500/20 text-amber-700' : 'bg-[#4EEAAA]/20 text-[#1A1A1A]'}`}>
+          {mockMode ? 'Mock Mode' : 'AIO Live'}
+        </span>
+      </div>
 
-        {/* Mode badge - top left */}
-        <div className="absolute top-4 left-4">
-          <span className={`px-2 py-1 text-xs font-medium rounded-full ${mockMode ? 'bg-amber-500/20 text-amber-700' : 'bg-[#4EEAAA]/20 text-[#1A1A1A]'}`}>
-            {mockMode ? 'Mock Mode' : 'AIO Live'}
-          </span>
+      {/* Main content - vertical stack, all separated */}
+      <div className="flex flex-col items-center gap-4 w-full max-w-2xl px-4">
+
+        {/* The Orb - 50% smaller (280 → 140) */}
+        <div style={{ height: '140px', width: '140px' }}>
+          <WebGLOrb
+            agentState={displayAgentState}
+            inputVolume={displayInputVolume}
+            outputVolume={orbOutputVolume}
+            isConnected={true}
+            size={140}
+          />
         </div>
 
-        {/* Hero: WebGL Orb with Transcript below - FIXED LAYOUT */}
-        <div className="flex flex-col items-center" style={{ minHeight: '500px' }}>
-          {/* The Orb - fixed position, only bounces/ripples when speaking */}
-          <div style={{ height: '280px', width: '280px' }}>
-            <WebGLOrb
-              agentState={displayAgentState}
-              inputVolume={displayInputVolume}
-              outputVolume={orbOutputVolume}
-              isConnected={true}
-              size={280}
+        {/* Agent state label - 25% smaller */}
+        <div className="h-6 flex items-center justify-center">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+            {displayAgentState === 'listening' && 'Listening...'}
+            {displayAgentState === 'thinking' && 'Processing...'}
+            {displayAgentState === 'speaking' && 'Speaking...'}
+            {!displayAgentState && 'Ready'}
+          </p>
+        </div>
+
+        {/* Transcript Cycler - CENTER, keeps flex for text */}
+        <div className="w-full">
+          <TranscriptCycler
+            messages={displayMessages}
+            toolCalls={displayToolCalls}
+            maxVisible={6}
+          />
+        </div>
+
+        {/* Input waveform - 25% smaller (48 → 36), below transcript */}
+        <div className="w-full max-w-sm h-9">
+          <div style={{ opacity: displayAgentState === 'listening' ? 1 : 0, transition: 'opacity 0.3s' }}>
+            <LiveWaveform
+              active={displayAgentState === 'listening'}
+              barColor="rgba(78, 234, 170, 0.7)"
+              height={36}
             />
-          </div>
-
-          {/* Agent state label - fixed height */}
-          <div className="h-8 flex items-center justify-center mt-4">
-            <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">
-              {displayAgentState === 'listening' && 'Listening...'}
-              {displayAgentState === 'thinking' && 'Processing...'}
-              {displayAgentState === 'speaking' && 'Speaking...'}
-              {!displayAgentState && 'Ready'}
-            </p>
-          </div>
-
-          {/* Transcript Cycler - fixed position below orb */}
-          <div className="mt-4 w-full">
-            <TranscriptCycler
-              messages={displayMessages}
-              toolCalls={displayToolCalls}
-              maxVisible={6}
-            />
-          </div>
-
-          {/* Input waveform - fixed height container, opacity controlled */}
-          <div className="w-full max-w-md mt-4 h-12">
-            <div style={{ opacity: displayAgentState === 'listening' ? 1 : 0, transition: 'opacity 0.3s' }}>
-              <LiveWaveform
-                active={displayAgentState === 'listening'}
-                barColor="rgba(78, 234, 170, 0.7)"
-                height={48}
-              />
-            </div>
           </div>
         </div>
 
         {/* Error display */}
         {error && !mockMode && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+            <p className="text-xs text-red-600">{error}</p>
           </div>
         )}
-      </div>
 
-      {/* SYNRG branding - bottom */}
-      <div className="absolute bottom-6 text-center">
-        <img
-          src="/synrg-logo.png"
-          alt="SYNRG"
-          className="h-10 w-auto mx-auto"
-        />
-        <p className="text-xs text-gray-400 mt-2 tracking-wider">
-          VOICE ASSISTANT
-        </p>
+        {/* SYNRG branding - 25% smaller, in flow not absolute */}
+        <div className="text-center mt-2">
+          <img
+            src="/synrg-logo.png"
+            alt="SYNRG"
+            className="h-8 w-auto mx-auto"
+          />
+          <p className="text-[10px] text-gray-400 mt-1 tracking-wider">
+            VOICE ASSISTANT
+          </p>
+        </div>
       </div>
     </div>
   )
