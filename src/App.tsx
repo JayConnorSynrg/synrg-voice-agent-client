@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { WebGLOrb } from './components/WebGLOrb'
 import { LiveWaveform } from './components/LiveWaveform'
-import { MessageFeed } from './components/MessageFeed'
+import { TranscriptCycler } from './components/TranscriptCycler'
 import { useLiveKitAgent } from './hooks/useLiveKitAgent'
 import { useStore } from './lib/store'
 
@@ -159,8 +159,9 @@ function App() {
           </span>
         </div>
 
-        {/* Hero: WebGL Orb */}
-        <div className="flex-1 flex items-center justify-center py-12">
+        {/* Hero: WebGL Orb with Transcript below */}
+        <div className="flex flex-col items-center justify-center py-8">
+          {/* The Orb */}
           <WebGLOrb
             agentState={agentState}
             inputVolume={inputVolume}
@@ -168,11 +169,20 @@ function App() {
             isConnected={true}
             size={280}
           />
+
+          {/* Transcript Cycler - positioned directly below orb */}
+          <div className="mt-6 w-full">
+            <TranscriptCycler
+              messages={messages}
+              toolCalls={toolCalls}
+              maxVisible={2}
+            />
+          </div>
         </div>
 
         {/* Input waveform - shows when listening */}
         {agentState === 'listening' && (
-          <div className="w-full max-w-md mb-8 animate-fade-in">
+          <div className="w-full max-w-md mb-6 animate-fade-in">
             <LiveWaveform
               active={true}
               barColor="rgba(78, 234, 170, 0.7)"
@@ -182,21 +192,13 @@ function App() {
         )}
 
         {/* Agent state label - NO "Connecting" states ever shown */}
-        <div className="mb-8 text-center">
+        <div className="mb-6 text-center">
           <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">
             {agentState === 'listening' && 'Listening...'}
             {agentState === 'thinking' && 'Processing...'}
             {agentState === 'speaking' && 'Speaking...'}
             {!agentState && 'Ready'}
           </p>
-        </div>
-
-        {/* Message feed */}
-        <div className="w-full">
-          <MessageFeed
-            messages={messages}
-            toolCalls={toolCalls}
-          />
         </div>
 
         {/* Error display */}

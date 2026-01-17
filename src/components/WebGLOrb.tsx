@@ -27,6 +27,7 @@ export function WebGLOrb({
   const animationRef = useRef<number | null>(null)
   const programRef = useRef<any>(null)
   const rendererRef = useRef<any>(null)
+  const intensityRef = useRef<number>(0) // Smoothed intensity value
 
   // Calculate hue based on state (0-360)
   const getHue = useCallback(() => {
@@ -81,6 +82,7 @@ export function WebGLOrb({
           uniform float hue;
           uniform float hover;
           uniform float hoverIntensity;
+          uniform float intensity; // Audio-reactive intensity (0-1)
           uniform vec3 backgroundColor;
           varying vec2 vUv;
 
@@ -175,8 +177,13 @@ export function WebGLOrb({
 
             float bgLuminance = dot(backgroundColor, vec3(0.299, 0.587, 0.114));
 
+            // Audio-reactive pulse: scale radius and brightness
+            float intensityBoost = 1.0 + intensity * 0.15; // Scale boost (up to 15%)
+            float brightnessBoost = 1.0 + intensity * 0.6; // Brightness boost (up to 60%)
+
             float n0 = snoise3(vec3(uv * noiseScale, iTime * 0.5)) * 0.5 + 0.5;
             float r0 = mix(mix(innerRadius, 1.0, 0.4), mix(innerRadius, 1.0, 0.6), n0);
+            r0 *= intensityBoost; // Audio-reactive radius expansion
             float d0 = distance(uv, (r0 * invLen) * uv);
             float v0 = light1(1.0, 10.0, d0);
 
@@ -188,7 +195,7 @@ export function WebGLOrb({
             float a = iTime * -1.0;
             vec2 pos = vec2(cos(a), sin(a)) * r0;
             float d = distance(uv, pos);
-            float v1 = light2(1.5, 5.0, d);
+            float v1 = light2(1.5, 5.0, d) * brightnessBoost; // Audio-reactive glow
             v1 *= light1(1.0, 50.0, d0);
 
             float v2 = smoothstep(1.0, mix(innerRadius, 1.0, n0 * 0.5), len);
@@ -198,7 +205,7 @@ export function WebGLOrb({
             float fadeAmount = mix(1.0, 0.1, bgLuminance);
 
             vec3 darkCol = mix(color3, colBase, v0);
-            darkCol = (darkCol + v1) * v2 * v3;
+            darkCol = (darkCol + v1) * v2 * v3 * brightnessBoost; // Audio-reactive brightness
             darkCol = clamp(darkCol, 0.0, 1.0);
 
             vec3 lightCol = (colBase + v1) * mix(1.0, v2 * v3, fadeAmount);
@@ -239,6 +246,7 @@ export function WebGLOrb({
             hue: { value: getHue() },
             hover: { value: 0 },
             hoverIntensity: { value: 0.2 },
+            intensity: { value: 0 }, // Audio-reactive intensity
             backgroundColor: { value: new Vec3(1, 1, 1) } // White background
           }
         })
@@ -260,6 +268,12 @@ export function WebGLOrb({
           animationRef.current = requestAnimationFrame(update)
           program.uniforms.iTime.value = t * 0.001
           program.uniforms.hue.value = getHue()
+
+          // Smooth intensity interpolation (lerp with 0.15 factor for responsiveness)
+          const targetIntensity = outputVolume
+          intensityRef.current += (targetIntensity - intensityRef.current) * 0.15
+          program.uniforms.intensity.value = intensityRef.current
+
           renderer.render({ scene: mesh })
         }
         animationRef.current = requestAnimationFrame(update)
@@ -288,7 +302,7 @@ export function WebGLOrb({
     return () => {
       if (cleanup) cleanup()
     }
-  }, [size, useWebGL, getHue])
+  }, [size, useWebGL, getHue, outputVolume])
 
   // Update hue when state changes
   useEffect(() => {
@@ -299,7 +313,8 @@ export function WebGLOrb({
 
   // CSS Fallback - ring glow style
   const hue = getHue()
-  const intensity = isConnected ? (agentState ? 1 : 0.7) : 0.5
+  const baseIntensity = isConnected ? (agentState ? 1 : 0.7) : 0.5
+  const intensity = baseIntensity + outputVolume * 0.5 // Add audio-reactive boost
   const pulseSpeed = agentState === 'speaking' ? '0.5s' : agentState === 'thinking' ? '0.8s' : '2s'
 
   return (
