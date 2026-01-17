@@ -13,11 +13,8 @@ interface RoomOptions {
   }
 }
 
-interface DataReceivedCallback {
-  payload: Uint8Array
-  topic?: string
-  participant?: unknown
-}
+// DataReceived callback receives separate params, not an object:
+// (payload: Uint8Array, participant: RemoteParticipant, kind: DataPacket_Kind, topic?: string)
 
 interface UseLiveKitAgentOptions {
   onConnect?: () => void
@@ -78,11 +75,20 @@ export function useLiveKitAgent(options: UseLiveKitAgentOptions = {}) {
   } = useStore()
 
   // Handle data messages from agent
-  const handleDataMessage = useCallback((data: DataReceivedCallback) => {
+  // NOTE: LiveKit's DataReceived callback receives separate params, NOT an object
+  // Signature: (payload: Uint8Array, participant: RemoteParticipant, kind: DataPacket_Kind, topic?: string)
+  const handleDataMessage = useCallback((
+    payload: Uint8Array,
+    participant: unknown,
+    kind: unknown,
+    topic?: string
+  ) => {
     try {
       const decoder = new TextDecoder()
-      const jsonStr = decoder.decode(data.payload)
+      const jsonStr = decoder.decode(payload)
+      console.log('[DataReceived] Raw:', jsonStr, 'from:', (participant as any)?.identity, 'topic:', topic)
       const message: AgentMessage = JSON.parse(jsonStr)
+      console.log('[DataReceived] Parsed:', message.type, message)
 
       switch (message.type) {
         case 'agent.state':

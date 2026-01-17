@@ -36,13 +36,18 @@ export function TranscriptCycler({
 
   // Combine and sort messages and tool calls by timestamp (newest first for cycling)
   useEffect(() => {
+    console.log('[TranscriptCycler] Messages received:', messages.length, messages)
+    console.log('[TranscriptCycler] ToolCalls received:', toolCalls.length)
+
     const combined: TranscriptItem[] = [
       ...messages.map(m => ({ ...m, type: 'message' as const })),
       ...toolCalls.map(t => ({ ...t, type: 'tool' as const }))
     ].sort((a, b) => b.timestamp - a.timestamp) // newest first
 
     // Only show the most recent items
-    setVisibleItems(combined.slice(0, maxVisible))
+    const visible = combined.slice(0, maxVisible)
+    console.log('[TranscriptCycler] Visible items:', visible.length, visible)
+    setVisibleItems(visible)
   }, [messages, toolCalls, maxVisible])
 
   // Always render container to prevent layout shift

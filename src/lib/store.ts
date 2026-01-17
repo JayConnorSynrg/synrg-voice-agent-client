@@ -74,17 +74,20 @@ export const useStore = create<VoiceAgentStore>((set) => ({
   setInputVolume: (inputVolume) => set({ inputVolume }),
   setOutputVolume: (outputVolume) => set({ outputVolume }),
 
-  addMessage: (message) =>
-    set((state) => ({
-      messages: [
-        ...state.messages,
-        {
-          ...message,
-          id: generateId(),
-          timestamp: Date.now()
-        }
-      ]
-    })),
+  addMessage: (message) => {
+    console.log('[Store] addMessage called:', message)
+    set((state) => {
+      const newMessage = {
+        ...message,
+        id: generateId(),
+        timestamp: Date.now()
+      }
+      console.log('[Store] New messages array length:', state.messages.length + 1)
+      return {
+        messages: [...state.messages, newMessage]
+      }
+    })
+  },
 
   addToolCall: (toolCall) =>
     set((state) => ({
