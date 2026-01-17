@@ -51,15 +51,15 @@ export function TranscriptCycler({
 
   return (
     <div className="w-full max-w-md mx-auto">
-      {/* Glassmorphic container */}
+      {/* Glassmorphic container - light mode compatible */}
       <div
         className="
           relative overflow-hidden
           rounded-2xl
-          bg-gradient-to-br from-white/5 to-white/[0.02]
+          bg-gradient-to-br from-gray-900/90 to-gray-800/85
           backdrop-blur-md
-          border border-white/10
-          shadow-[0_8px_32px_rgba(0,0,0,0.12)]
+          border border-gray-700/50
+          shadow-[0_8px_32px_rgba(0,0,0,0.25)]
           px-6 py-4
         "
       >
@@ -114,7 +114,7 @@ export function TranscriptCycler({
         <div
           className="
             absolute inset-x-0 top-0 h-8
-            bg-gradient-to-b from-black/10 to-transparent
+            bg-gradient-to-b from-gray-900/40 to-transparent
             pointer-events-none
           "
         />
