@@ -53,7 +53,7 @@ export function TranscriptCycler({
   // Always render container to prevent layout shift
   return (
     <div className="w-full max-w-3xl mx-auto">
-      {/* Glassmorphic container - WIDER, TALLER for more transcript context */}
+      {/* Glassmorphic container - LARGER for more transcript context */}
       <div
         className="
           relative overflow-hidden
@@ -62,9 +62,9 @@ export function TranscriptCycler({
           backdrop-blur-md
           border border-gray-700/50
           shadow-[0_8px_32px_rgba(0,0,0,0.25)]
-          px-6 py-4
+          px-5 py-3
         "
-        style={{ height: '220px' }}
+        style={{ height: '280px' }}
       >
         {/* Content area with vertical spacing - fixed height container */}
         <div className="space-y-3 h-full overflow-hidden">
@@ -115,9 +115,9 @@ export function TranscriptCycler({
 function MessageTranscript({ message }: { message: Message }) {
   const isUser = message.role === 'user'
 
-  // Show more content - truncate at 180 chars for wider container
-  const truncatedContent = message.content.length > 180
-    ? message.content.slice(0, 180) + '...'
+  // Show more content - truncate at 250 chars for larger container
+  const truncatedContent = message.content.length > 250
+    ? message.content.slice(0, 250) + '...'
     : message.content
 
   return (
@@ -137,7 +137,7 @@ function MessageTranscript({ message }: { message: Message }) {
       <div className="flex-1 min-w-0">
         <p
           className={`
-            text-sm leading-snug
+            text-xs leading-relaxed
             ${isUser
               ? 'bg-gradient-to-r from-[#4EEAAA] to-[#22C55E] bg-clip-text text-transparent'
               : 'text-white/80'
@@ -149,7 +149,7 @@ function MessageTranscript({ message }: { message: Message }) {
       </div>
 
       {/* Role label */}
-      <span className="text-[10px] text-white/30 uppercase tracking-wider flex-shrink-0">
+      <span className="text-[9px] text-white/30 uppercase tracking-wider flex-shrink-0">
         {message.role}
       </span>
     </div>
@@ -205,7 +205,7 @@ function ToolTranscript({ toolCall }: { toolCall: ToolCall }) {
 
       {/* Tool name */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-white/80 leading-snug">
+        <p className="text-xs text-white/80 leading-relaxed">
           {truncatedName}
         </p>
       </div>
@@ -213,7 +213,7 @@ function ToolTranscript({ toolCall }: { toolCall: ToolCall }) {
       {/* Status icon */}
       <span
         className={`
-          text-sm ${config.color} flex-shrink-0
+          text-xs ${config.color} flex-shrink-0
           ${toolCall.status === 'executing' ? 'animate-spin' : ''}
         `}
       >
@@ -221,7 +221,7 @@ function ToolTranscript({ toolCall }: { toolCall: ToolCall }) {
       </span>
 
       {/* Tool label */}
-      <span className="text-[10px] text-white/30 uppercase tracking-wider flex-shrink-0">
+      <span className="text-[9px] text-white/30 uppercase tracking-wider flex-shrink-0">
         Tool
       </span>
     </div>

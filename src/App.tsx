@@ -194,7 +194,7 @@ function App() {
             <TranscriptCycler
               messages={displayMessages}
               toolCalls={displayToolCalls}
-              maxVisible={4}
+              maxVisible={6}
             />
           </div>
 
