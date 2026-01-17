@@ -45,13 +45,10 @@ export function TranscriptCycler({
     setVisibleItems(combined.slice(0, maxVisible))
   }, [messages, toolCalls, maxVisible])
 
-  if (visibleItems.length === 0) {
-    return null
-  }
-
+  // Always render container to prevent layout shift
   return (
-    <div className="w-full max-w-md mx-auto">
-      {/* Glassmorphic container - light mode compatible */}
+    <div className="w-full max-w-3xl mx-auto">
+      {/* Glassmorphic container - WIDER, TALLER for more transcript context */}
       <div
         className="
           relative overflow-hidden
@@ -62,43 +59,30 @@ export function TranscriptCycler({
           shadow-[0_8px_32px_rgba(0,0,0,0.25)]
           px-6 py-4
         "
+        style={{ height: '220px' }}
       >
-        {/* Content area with vertical spacing */}
-        <div className="space-y-3 min-h-[60px]">
-          <AnimatePresence mode="popLayout" initial={false}>
+        {/* Content area with vertical spacing - fixed height container */}
+        <div className="space-y-3 h-full overflow-hidden">
+          <AnimatePresence mode="sync" initial={false}>
             {visibleItems.map((item, index) => (
               <motion.div
                 key={item.id}
-                layout
                 initial={{
                   opacity: 0,
-                  y: 20,
-                  filter: 'blur(8px)'
+                  filter: 'blur(4px)'
                 }}
                 animate={{
-                  opacity: 1 - index * 0.4, // Fade older items more
-                  y: 0,
-                  filter: 'blur(0px)',
-                  scale: 1 - index * 0.03 // Slight scale reduction
+                  opacity: 1 - index * 0.3, // Fade older items more
+                  filter: 'blur(0px)'
                 }}
                 exit={{
                   opacity: 0,
-                  y: -20,
-                  filter: 'blur(8px)',
-                  transition: {
-                    duration: 0.4,
-                    ease: [0.4, 0, 0.6, 1]
-                  }
+                  filter: 'blur(4px)'
                 }}
                 transition={{
-                  duration: 0.6,
-                  ease: [0.4, 0, 0.2, 1],
-                  layout: {
-                    duration: 0.5,
-                    ease: [0.4, 0, 0.2, 1]
-                  }
+                  duration: 0.3,
+                  ease: 'easeOut'
                 }}
-                className="origin-center"
               >
                 {item.type === 'message' ? (
                   <MessageTranscript message={item as Message} />
@@ -126,22 +110,21 @@ export function TranscriptCycler({
 function MessageTranscript({ message }: { message: Message }) {
   const isUser = message.role === 'user'
 
-  // Truncate content to ~50 chars
-  const truncatedContent = message.content.length > 50
-    ? message.content.slice(0, 50) + '...'
+  // Show more content - truncate at 180 chars for wider container
+  const truncatedContent = message.content.length > 180
+    ? message.content.slice(0, 180) + '...'
     : message.content
 
   return (
-    <div className="flex items-center gap-2.5">
+    <div className="flex items-start gap-2">
       {/* Role indicator */}
       <div
         className={`
-          flex-shrink-0 w-1.5 h-1.5 rounded-full
+          flex-shrink-0 w-1.5 h-1.5 rounded-full mt-1
           ${isUser
             ? 'bg-gradient-to-br from-[#4EEAAA] to-[#22C55E]'
             : 'bg-white/80'
           }
-          shadow-sm
         `}
       />
 
@@ -149,10 +132,10 @@ function MessageTranscript({ message }: { message: Message }) {
       <div className="flex-1 min-w-0">
         <p
           className={`
-            text-sm font-medium truncate
+            text-sm leading-snug
             ${isUser
               ? 'bg-gradient-to-r from-[#4EEAAA] to-[#22C55E] bg-clip-text text-transparent'
-              : 'text-white/90'
+              : 'text-white/80'
             }
           `}
         >
@@ -161,7 +144,7 @@ function MessageTranscript({ message }: { message: Message }) {
       </div>
 
       {/* Role label */}
-      <span className="text-xs text-white/40 uppercase tracking-wider flex-shrink-0">
+      <span className="text-[10px] text-white/30 uppercase tracking-wider flex-shrink-0">
         {message.role}
       </span>
     </div>
@@ -205,20 +188,19 @@ function ToolTranscript({ toolCall }: { toolCall: ToolCall }) {
     : displayName
 
   return (
-    <div className="flex items-center gap-2.5">
+    <div className="flex items-start gap-2">
       {/* Status indicator dot */}
       <div
         className={`
-          flex-shrink-0 w-1.5 h-1.5 rounded-full
+          flex-shrink-0 w-1.5 h-1.5 rounded-full mt-1
           ${config.dotColor}
-          shadow-sm
           ${toolCall.status === 'executing' ? 'animate-pulse' : ''}
         `}
       />
 
-      {/* Tool name with gradient */}
+      {/* Tool name */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white/90 truncate">
+        <p className="text-sm text-white/80 leading-snug">
           {truncatedName}
         </p>
       </div>
@@ -234,7 +216,7 @@ function ToolTranscript({ toolCall }: { toolCall: ToolCall }) {
       </span>
 
       {/* Tool label */}
-      <span className="text-xs text-white/40 uppercase tracking-wider flex-shrink-0">
+      <span className="text-[10px] text-white/30 uppercase tracking-wider flex-shrink-0">
         Tool
       </span>
     </div>

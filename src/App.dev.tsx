@@ -196,9 +196,6 @@ function App() {
   const displayMessages = mockMode ? MOCK_MESSAGES : messages
   const displayToolCalls = mockMode ? MOCK_TOOL_CALLS : toolCalls
 
-  // Only pass output volume to orb when speaking (for bounce/ripple effect)
-  const orbOutputVolume = displayAgentState === 'speaking' ? displayOutputVolume : 0
-
   // FULLY CONNECTED: Show complete UI - user sees "Ready" immediately
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center overflow-hidden">
@@ -209,52 +206,50 @@ function App() {
         {/* Mode badge - top left */}
         <div className="absolute top-4 left-4">
           <span className={`px-2 py-1 text-xs font-medium rounded-full ${mockMode ? 'bg-amber-500/20 text-amber-700' : 'bg-[#4EEAAA]/20 text-[#1A1A1A]'}`}>
-            {mockMode ? 'Mock Mode' : 'AIO Live'}
+            {mockMode ? 'Mock Mode' : 'LiveKit'}
           </span>
         </div>
 
-        {/* Hero: WebGL Orb with Transcript below - FIXED LAYOUT */}
-        <div className="flex flex-col items-center" style={{ minHeight: '500px' }}>
-          {/* The Orb - fixed position, only bounces/ripples when speaking */}
-          <div style={{ height: '280px', width: '280px' }}>
-            <WebGLOrb
-              agentState={displayAgentState}
-              inputVolume={displayInputVolume}
-              outputVolume={orbOutputVolume}
-              isConnected={true}
-              size={280}
-            />
-          </div>
+        {/* Hero: WebGL Orb with Transcript below */}
+        <div className="flex flex-col items-center justify-center py-8">
+          {/* The Orb */}
+          <WebGLOrb
+            agentState={displayAgentState}
+            inputVolume={displayInputVolume}
+            outputVolume={displayOutputVolume}
+            isConnected={true}
+            size={280}
+          />
 
-          {/* Agent state label - fixed height */}
-          <div className="h-8 flex items-center justify-center mt-4">
-            <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">
-              {displayAgentState === 'listening' && 'Listening...'}
-              {displayAgentState === 'thinking' && 'Processing...'}
-              {displayAgentState === 'speaking' && 'Speaking...'}
-              {!displayAgentState && 'Ready'}
-            </p>
-          </div>
-
-          {/* Transcript Cycler - fixed position below orb */}
-          <div className="mt-4 w-full">
+          {/* Transcript Cycler - positioned directly below orb */}
+          <div className="mt-6 w-full">
             <TranscriptCycler
               messages={displayMessages}
               toolCalls={displayToolCalls}
-              maxVisible={4}
+              maxVisible={2}
             />
           </div>
+        </div>
 
-          {/* Input waveform - fixed height container, opacity controlled */}
-          <div className="w-full max-w-md mt-4 h-12">
-            <div style={{ opacity: displayAgentState === 'listening' ? 1 : 0, transition: 'opacity 0.3s' }}>
-              <LiveWaveform
-                active={displayAgentState === 'listening'}
-                barColor="rgba(78, 234, 170, 0.7)"
-                height={48}
-              />
-            </div>
+        {/* Input waveform - shows when listening */}
+        {displayAgentState === 'listening' && (
+          <div className="w-full max-w-md mb-6 animate-fade-in">
+            <LiveWaveform
+              active={true}
+              barColor="rgba(78, 234, 170, 0.7)"
+              height={48}
+            />
           </div>
+        )}
+
+        {/* Agent state label - NO "Connecting" states ever shown */}
+        <div className="mb-6 text-center">
+          <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+            {displayAgentState === 'listening' && 'Listening...'}
+            {displayAgentState === 'thinking' && 'Processing...'}
+            {displayAgentState === 'speaking' && 'Speaking...'}
+            {!displayAgentState && 'Ready'}
+          </p>
         </div>
 
         {/* Error display */}
